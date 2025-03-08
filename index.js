@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { OrbitControls } from "./three/examples/jsm/controls/OrbitControls.js";
-import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
-import { DRACOLoader } from "./three/examples/jsm/loaders/DRACOLoader.js";
+import { OrbitControls } from "/three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "/three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "/three/examples/jsm/loaders/DRACOLoader.js";
 
 let camera, scene, renderer, island, controls, house;
 
@@ -12,7 +12,7 @@ function init() {
 	scene = new THREE.Scene();
 
 	// Фон ближе
-	const bgTexture = new THREE.TextureLoader().load("./img/night-sky.png");
+	const bgTexture = new THREE.TextureLoader().load("/img/night-sky.png");
 	bgTexture.wrapS = bgTexture.wrapT = THREE.RepeatWrapping;
 	scene.background = bgTexture;
 
@@ -29,7 +29,7 @@ function init() {
 
 	// Создание острова
 	const textureLoader = new THREE.TextureLoader();
-	const islandTexture = textureLoader.load("./img/i.jpg");
+	const islandTexture = textureLoader.load("/img/i.jpg");
 	const islandGeometry = new THREE.CylinderGeometry(25, 26, 5, 64);
 	const islandMaterial = new THREE.MeshStandardMaterial({ map: islandTexture, depthTest: true });
 	island = new THREE.Mesh(islandGeometry, islandMaterial);
@@ -70,7 +70,7 @@ function loadModels() {
 	const loader = new GLTFLoader();
 	loader.setDRACOLoader(dracoLoader);
 
-	loader.load("./three/examples/models/gltf/AVIFTest/forest_house.glb", function (gltf) {
+	loader.load("/three/examples/models/gltf/AVIFTest/forest_house.glb", function (gltf) {
 		gltf.scene.position.set(0, 5, 0);
 		house = gltf.scene;
 		scene.add(house);

@@ -218,8 +218,13 @@ function onMouseMove(event) {
 	if (intersects.length > 0) {
 		let object = intersects[0].object;
 		let model = findParentModel(object);
+		console.log("🚀 ~ onMouseMove ~ model:", model);
+		console.log("🚀 ~ onMouseMove ~ model:", island);
+		console.log("🚀 ~ onMouseMove ~ selectedModel:", selectedModel);
 
-		if (selectedModel !== model) {
+		if (model == island) {
+			console.log("оно");
+		} else if (selectedModel !== model) {
 			resetPreviousSelection();
 			selectedModel = model;
 			saveOriginalMaterials(model);

@@ -11,10 +11,18 @@ let houseBoundingBox = new THREE.Box3(); // Границы дома
 let stars; // Переменная для звёзд
 const starsCount = 10000; // Количество звёзд
 let stats;
+
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let highlightedModel = null;
+let originalMaterials = new Map();
+
 init();
 
 function init() {
 	initStats();
+	window.addEventListener("click", onMouseMove);
+
 	// Создание сцены
 	scene = new THREE.Scene();
 
@@ -66,7 +74,7 @@ function init() {
 	loadModels();
 
 	window.addEventListener("resize", onWindowResize);
-	window.addEventListener("click", onIslandClick);
+	window.addEventListener("dblclick", onIslandClick);
 	renderer.setAnimationLoop(animate);
 }
 
@@ -197,3 +205,68 @@ document.getElementById("resetCamera").addEventListener("click", () => {
 	controls.target.set(0, 2.5, 0); // Смотрим на остров
 	controls.update(); // Обновляем управление
 });
+
+function onMouseMove(event) {
+	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+	raycaster.setFromCamera(mouse, camera);
+	let intersects = raycaster.intersectObjects(scene.children, true);
+
+	if (intersects.length > 0) {
+		let object = intersects[0].object;
+		let model = findParentModel(object); // Находим всю модель
+
+		if (highlightedModel !== model) {
+			resetPreviousModel(); // Убираем подсветку с прошлой модели
+
+			highlightedModel = model;
+			saveOriginalMaterials(model);
+			applyHighlight(model);
+		}
+	} else {
+		resetPreviousModel();
+	}
+}
+
+// Функция поиска родительской модели
+function findParentModel(object) {
+	while (object.parent && object.parent !== scene) {
+		object = object.parent;
+	}
+	return object;
+}
+
+// Сохраняем оригинальные материалы модели
+function saveOriginalMaterials(model) {
+	originalMaterials.clear();
+	model.traverse((child) => {
+		if (child.isMesh) {
+			originalMaterials.set(child, child.material);
+		}
+	});
+}
+
+// Применяем подсветку ко всей модели
+function applyHighlight(model) {
+	model.traverse((child) => {
+		if (child.isMesh) {
+			child.material = new THREE.MeshBasicMaterial({
+				color: 0xff0000,
+				wireframe: true,
+			});
+		}
+	});
+}
+
+// Сбрасываем подсветку предыдущей модели
+function resetPreviousModel() {
+	if (highlightedModel) {
+		highlightedModel.traverse((child) => {
+			if (child.isMesh && originalMaterials.has(child)) {
+				child.material = originalMaterials.get(child);
+			}
+		});
+		highlightedModel = null;
+	}
+}

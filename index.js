@@ -2,9 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "./three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "./three/examples/jsm/loaders/DRACOLoader.js";
+import { OBJLoader } from "./three/examples/jsm/loaders/OBJLoader.js";
 
 let camera, scene, renderer, island, controls, house;
-
+let forestHouse; // Переменная для модели дома
+let houseBoundingBox = new THREE.Box3(); // Границы дома
 init();
 
 function init() {
@@ -75,6 +77,18 @@ function loadModels() {
 		house = gltf.scene;
 		scene.add(house);
 	});
+
+	const objLoader = new OBJLoader();
+	objLoader.load("./three/examples/models/Cartoon_house_low_poly_OBJ.obj", (object) => {
+		object.scale.set(0.01, 0.01, 0.01); // Измени масштаб модели, если нужно
+		object.position.set(5, 5, 1); // Установи позицию
+		scene.add(object);
+
+		forestHouse = object;
+
+		// Обновляем границы дома
+		houseBoundingBox.setFromObject(forestHouse);
+	});
 }
 
 function onWindowResize() {
@@ -84,9 +98,25 @@ function onWindowResize() {
 }
 
 function animate() {
+	// // Проверяем, входит ли камера в дом
+	const cameraBox = new THREE.Box3().setFromCenterAndSize(
+		camera.position,
+		new THREE.Vector3(1, 1, 1), // Размер хитбокса камеры
+	);
+
+	if (houseBoundingBox.intersectsBox(cameraBox)) {
+		console.log("Камера столкнулась с домом!");
+		camera.position.sub(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.5));
+	}
+
+	if (houseBoundingBox.containsPoint(camera.position)) {
+		camera.position.y += 1; // Отталкиваем камеру вверх, чтобы не застревала
+	}
+
 	controls.update();
 	renderer.render(scene, camera);
 }
+
 function onIslandClick(event) {
 	const raycaster = new THREE.Raycaster();
 	const mouse = new THREE.Vector2();

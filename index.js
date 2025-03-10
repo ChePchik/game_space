@@ -3,25 +3,29 @@ import { OrbitControls } from "./three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "./three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "./three/examples/jsm/loaders/DRACOLoader.js";
 import { OBJLoader } from "./three/examples/jsm/loaders/OBJLoader.js";
+import Stats from "./three/examples/jsm/libs/stats.module.js";
 
 let camera, scene, renderer, island, controls, house;
 let forestHouse; // Переменная для модели дома
 let houseBoundingBox = new THREE.Box3(); // Границы дома
+let stars; // Переменная для звёзд
+const starsCount = 10000; // Количество звёзд
+let stats;
 init();
 
 function init() {
+	initStats();
 	// Создание сцены
 	scene = new THREE.Scene();
 
-	// Фон ближе
-	const bgTexture = new THREE.TextureLoader().load("./img/night-sky.png");
-	bgTexture.wrapS = bgTexture.wrapT = THREE.RepeatWrapping;
-	scene.background = bgTexture;
+	// // Фон ближе
+	// const bgTexture = new THREE.TextureLoader().load("./img/night-sky.png");
+	// bgTexture.wrapS = bgTexture.wrapT = THREE.RepeatWrapping;
+	// scene.background = bgTexture;
 
 	// Камера
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
 	camera.position.set(0, 10, 20);
-
 	// Освещение
 	const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 	scene.add(ambientLight);
@@ -57,7 +61,7 @@ function init() {
 	controls.maxDistance = 300; // Увеличиваем максимальное отдаление, чтобы остров не исчезал
 
 	controls.update();
-
+	createStars();
 	// Загрузка моделей
 	loadModels();
 
@@ -98,6 +102,7 @@ function onWindowResize() {
 }
 
 function animate() {
+	stats.begin(); // Запускаем измерение FPS
 	// // Проверяем, входит ли камера в дом
 	const cameraBox = new THREE.Box3().setFromCenterAndSize(
 		camera.position,
@@ -113,8 +118,22 @@ function animate() {
 		camera.position.y += 1; // Отталкиваем камеру вверх, чтобы не застревала
 	}
 
+	//
+	// Двигаем звёзды влево и вглубь сцены
+	stars.position.x -= 0.02;
+	stars.position.z -= 0.01;
+
+	// Если звёзды сильно сдвинулись, сбрасываем их позицию
+	if (stars.position.x < -1000) {
+		stars.position.x = 1000;
+	}
+	if (stars.position.z < -1000) {
+		stars.position.z = 1000;
+	}
+
 	controls.update();
 	renderer.render(scene, camera);
+	stats.end(); // Завершаем измерение FPS
 }
 
 function onIslandClick(event) {
@@ -143,3 +162,38 @@ function onIslandClick(event) {
 		scene.add(cylinder);
 	}
 }
+
+function createStars() {
+	const starGeometry = new THREE.BufferGeometry();
+	const starVertices = [];
+
+	for (let i = 0; i < starsCount; i++) {
+		const x = (Math.random() - 0.5) * 1000; // Разброс по X
+		const y = (Math.random() - 0.5) * 1000; // Разброс по Y (выше сцены)
+		const z = (Math.random() - 0.5) * 1000; // Разброс по Z
+
+		starVertices.push(x, y, z);
+	}
+
+	starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starVertices, 3));
+
+	const starMaterial = new THREE.PointsMaterial({
+		color: 0xffffff,
+		size: 0.5,
+		transparent: true,
+	});
+
+	stars = new THREE.Points(starGeometry, starMaterial);
+	scene.add(stars);
+}
+function initStats() {
+	stats = new Stats();
+	stats.showPanel(0); // 0 - FPS, 1 - MS, 2 - MB
+	document.body.appendChild(stats.dom);
+}
+
+document.getElementById("resetCamera").addEventListener("click", () => {
+	camera.position.set(0, 10, 20); // Начальные координаты камеры
+	controls.target.set(0, 2.5, 0); // Смотрим на остров
+	controls.update(); // Обновляем управление
+});

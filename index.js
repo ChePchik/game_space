@@ -9,6 +9,8 @@ let camera, scene, renderer, island, controls, house;
 let forestHouse; // Переменная для модели дома
 let houseBoundingBox = new THREE.Box3(); // Границы дома
 let stars; // Переменная для звёзд
+let selectedModel = null;
+let deleteButton = null;
 const starsCount = 10000; // Количество звёзд
 let stats;
 
@@ -215,17 +217,17 @@ function onMouseMove(event) {
 
 	if (intersects.length > 0) {
 		let object = intersects[0].object;
-		let model = findParentModel(object); // Находим всю модель
+		let model = findParentModel(object);
 
-		if (highlightedModel !== model) {
-			resetPreviousModel(); // Убираем подсветку с прошлой модели
-
-			highlightedModel = model;
+		if (selectedModel !== model) {
+			resetPreviousSelection();
+			selectedModel = model;
 			saveOriginalMaterials(model);
 			applyHighlight(model);
+			createDeleteButton(model);
 		}
 	} else {
-		resetPreviousModel();
+		resetPreviousSelection();
 	}
 }
 
@@ -269,4 +271,47 @@ function resetPreviousModel() {
 		});
 		highlightedModel = null;
 	}
+}
+
+// Сбрасываем выделение предыдущей модели
+function resetPreviousSelection() {
+	if (selectedModel) {
+		selectedModel.traverse((child) => {
+			if (child.isMesh && originalMaterials.has(child)) {
+				child.material = originalMaterials.get(child);
+			}
+		});
+		selectedModel = null;
+	}
+
+	if (deleteButton) {
+		document.body.removeChild(deleteButton);
+		deleteButton = null;
+	}
+}
+
+// Создаём кнопку удаления (крестик)
+function createDeleteButton(model) {
+	if (deleteButton) {
+		document.body.removeChild(deleteButton);
+	}
+
+	deleteButton = document.createElement("button");
+	deleteButton.innerHTML = "❌";
+	deleteButton.style.position = "absolute";
+	deleteButton.style.top = "20px";
+	deleteButton.style.right = "20px";
+	deleteButton.style.fontSize = "20px";
+	deleteButton.style.padding = "10px";
+	deleteButton.style.background = "red";
+	deleteButton.style.color = "white";
+	deleteButton.style.border = "none";
+	deleteButton.style.cursor = "pointer";
+
+	deleteButton.onclick = function () {
+		scene.remove(model);
+		resetPreviousSelection();
+	};
+
+	document.body.appendChild(deleteButton);
 }
